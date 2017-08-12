@@ -2,14 +2,33 @@
     "name": "roncemer/pdo-schema",
     "description": "YAML-based schema management, migration and DAO generator for PHP PDO",
     "type": "library",
-    "require": {
-        "mustangostang/spyc": "^0.6.2"
-    },
-    "license": "BSD",
+    "keywords": [
+        "schema",
+        "migration",
+        "dao",
+        "pdo"
+    ],
     "authors": [
         {
             "name": "Ron Cemer",
             "email": "ron@roncemer.com"
         }
-    ]
+    ],
+    "license": "BSD",
+    "require": {
+        "mustangostang/spyc": "^0.6.2"
+    },
+    "autoload": {
+        "files": [
+            "AbstractINIMultiDatabasePDOFactory.class.php"
+            ,"AbstractINIPDOFactory.class.php"
+            ,"ChildRowUpdater.class.php"
+            ,"DAOCache.interface.php"
+            ,"DDL.class.php"
+            ,"FileCache.class.php"
+            ,"FileCacheDAOCache.class.php"
+            ,"MemcacheDAOCache.class.php"
+            ,"SequentialStringStore.class.php"
+        ]
+    }
 }
