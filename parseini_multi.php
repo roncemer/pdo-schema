@@ -5,8 +5,8 @@
 // This software is released under the BSD license.
 // Please see the accompanying LICENSE.txt for details.
 
-include dirname(dirname(__FILE__)).'/pdo-schema/AbstractINIMultiDatabasePDOFactory.class.php';
-include dirname(dirname(__FILE__)).'/pdo-schema/DDL.class.php';
+include __DIR__.'/AbstractINIMultiDatabasePDOFactory.class.php';
+include __DIR__.'/DDL.class.php';
 
 if (($argc < 3) || ($argc > 4)) {
 	fprintf(STDERR, "Please specify a single INI filename, the path to the ddl directory where the YAML schema files exist, and an optional secondary database name.\n");

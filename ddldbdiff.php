@@ -5,8 +5,8 @@
 // This software is released under the BSD license.
 // Please see the accompanying LICENSE.txt for details.
 
-include dirname(__FILE__).'/AbstractINIMultiDatabasePDOFactory.class.php';
-include dirname(__FILE__).'/DDL.class.php';
+include __DIR__.'/AbstractINIMultiDatabasePDOFactory.class.php';
+include __DIR__.'/DDL.class.php';
 
 function usage() {
 	global $argv;

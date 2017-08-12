@@ -5,8 +5,8 @@
 // This software is released under the BSD license.
 // Please see the accompanying LICENSE.txt for details.
 
-include dirname(__FILE__).'/AbstractINIMultiDatabasePDOFactory.class.php';
-include dirname(__FILE__).'/DDL.class.php';
+include __DIR__.'/AbstractINIMultiDatabasePDOFactory.class.php';
+include __DIR__.'/DDL.class.php';
 
 // If $db is provided, it will be used to suppress insert statements which are not needed,
 // and may also be used to transform insert statements into update statements for rows which

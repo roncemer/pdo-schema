@@ -9,7 +9,7 @@
 // This software is released under the BSD license.
 // Please see the accompanying LICENSE.txt for details.
 
-if (!interface_exists('DAOCache', false)) include(dirname(__FILE__).'/DAOCache.interface.php');
+if (!interface_exists('DAOCache', false)) include(__DIR__.'/DAOCache.interface.php');
 
 class FileCacheDAOCache implements DAOCache {
 	protected $fileCache;

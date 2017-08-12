@@ -5,8 +5,6 @@
 // This software is released under the BSD license.
 // Please see the accompanying LICENSE.txt for details.
 
-if (!class_exists('Spyc', false)) include dirname(__FILE__).'/spyc/Spyc.php';
-
 // The DDL class represents an entire Data Definition Language (DDL) schema.
 class DDL {
 	// The list of currently supported dialects.
