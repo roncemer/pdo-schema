@@ -1,0 +1,15 @@
+{
+    "name": "roncemer/pdo-schema",
+    "description": "YAML-based schema management, migration and DAO generator for PHP PDO",
+    "type": "library",
+    "require": {
+        "mustangostang/spyc": "^0.6.2"
+    },
+    "license": "BSD",
+    "authors": [
+        {
+            "name": "Ron Cemer",
+            "email": "ron@roncemer.com"
+        }
+    ]
+}
