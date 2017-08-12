@@ -5,7 +5,7 @@
 // This software is released under the BSD license.
 // Please see the accompanying LICENSE.txt for details.
 
-include __DIR__.'/DDL.class.php';
+if (!class_exists('DDL', false)) include __DIR__.'/DDL.class.php';
 
 function usage() {
 	global $argv;

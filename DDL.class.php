@@ -5,6 +5,8 @@
 // This software is released under the BSD license.
 // Please see the accompanying LICENSE.txt for details.
 
+if (!class_exists('Spyc', false)) include dirname(dirname(__DIR__)).'/mustangostang/spyc/Spyc.php';
+
 // The DDL class represents an entire Data Definition Language (DDL) schema.
 class DDL {
 	// The list of currently supported dialects.
@@ -1632,6 +1634,7 @@ class SQLDDLSerializer {
 
 					$tablesCreated[] = $ldbpfx.$tle->tableName;
 
+					$sqlStatements[] = sprintf('drop table if exists %s', $ldbpfx.$tle->tableName);
 					$sqlStatements[] = sprintf('drop view if exists %s', $ldbpfx.$tle->tableName);
 					$sql = sprintf("create table %s (", $ldbpfx.$tle->tableName);
 					$sep = '';
@@ -2578,10 +2581,11 @@ class YAMLDDLSerializer {
 					} else if ($col->filename !== false) {
 						$yaml .= sprintf(" filename: %s", $col->filename);
 					} else {
-						$vlen = strlen($col->value);
+						$sval = (string)$col->value;
+						$vlen = strlen($sval);
 						$valIsBinary = false;
 						for ($vi = 0; $vi < $vlen; $vi++) {
-							$vcc = ord($col->value[$vi]);
+							$vcc = ord($sval[$vi]);
 							if (($vcc < 32) || ($vcc > 126)) {
 								$valIsBinary = true;
 								break;
@@ -3321,7 +3325,7 @@ class DAOClassGenerator {
 		// Open the class.
 		$code = "<?php\n";
 		$code .= self::$STUB_DATA_HEADER;
-		$code .= "include dirname(__FILE__).'/abstract/{$tableClassName}Abstract.class.php';\n";
+		$code .= "include __DIR__.'/abstract/{$tableClassName}Abstract.class.php';\n";
 		$code .= "class $tableClassName extends {$tableClassName}Abstract {\n";
 		$code .= "}\n";
 		return $code;
@@ -3345,9 +3349,9 @@ class DAOClassGenerator {
 
 		// Include data class.
 		if ($isAbstract) {
-			$code .= "if (!class_exists('$concreteTableClassName', false)) include dirname(dirname(__FILE__)).'/$concreteTableClassName.class.php';\n\n";
+			$code .= "if (!class_exists('$concreteTableClassName', false)) include dirname(__DIR__).'/$concreteTableClassName.class.php';\n\n";
 		} else {
-			$code .= "if (!class_exists('$concreteTableClassName', false)) include dirname(__FILE__).'/$concreteTableClassName.class.php';\n\n";
+			$code .= "if (!class_exists('$concreteTableClassName', false)) include __DIR__.'/$concreteTableClassName.class.php';\n\n";
 		}
 
 		$code .= ($isAbstract ? 'abstract ' : '')."class $daoClassName {\n";
@@ -3548,7 +3552,7 @@ class DAOClassGenerator {
 		// Open the class.
 		$code = "<?php\n";
 		$code .= self::$STUB_DAO_HEADER;
-		$code .= "include dirname(__FILE__).'/abstract/{$daoClassName}Abstract.class.php';\n";
+		$code .= "include __DIR__.'/abstract/{$daoClassName}Abstract.class.php';\n";
 		$code .= "class $daoClassName extends {$daoClassName}Abstract {\n";
 		$code .= "}\n";
 		return $code;

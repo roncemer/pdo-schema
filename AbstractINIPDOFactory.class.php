@@ -34,17 +34,17 @@ abstract class AbstractINIPDOFactory {
 		case 'mysql':
 			if ($port < 0) $port = 3306;
 			$con = new PDO(sprintf('mysql:host=%s;port=%d;dbname=%s', rawurlencode($host), $port, rawurlencode($database)), $username, $password);
-			$db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-			$db->setAttribute(PDO::ATTR_EMULATE_PREPARES, false);
-			$db->setAttribute(PDO::ATTR_STRINGIFY_FETCHES, false);
-			$db->setAttribute(PDO::MYSQL_ATTR_USE_BUFFERED_QUERY, false);
+			$con->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+			$con->setAttribute(PDO::ATTR_EMULATE_PREPARES, false);
+			$con->setAttribute(PDO::ATTR_STRINGIFY_FETCHES, false);
+			$con->setAttribute(PDO::MYSQL_ATTR_USE_BUFFERED_QUERY, false);
 			break;
 		case 'pgsql':
 			if ($port < 0) $port = 5432;
 			$con = new PDO(sprintf('pgsql:host=%s;port=%d;dbname=%s;user=%s;password=%s', rawurlencode($host), $port, rawurlencode($database), rawurlencode($username), rawurlencode($password)));
-			$db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-			$db->setAttribute(PDO::ATTR_EMULATE_PREPARES, false);
-			$db->setAttribute(PDO::ATTR_STRINGIFY_FETCHES, false);
+			$con->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+			$con->setAttribute(PDO::ATTR_EMULATE_PREPARES, false);
+			$con->setAttribute(PDO::ATTR_STRINGIFY_FETCHES, false);
 			break;
 		default:
 			throw new Exception(sprintf('Invalid dialect "%s" in connection parameters', $dialect));

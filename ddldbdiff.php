@@ -5,8 +5,8 @@
 // This software is released under the BSD license.
 // Please see the accompanying LICENSE.txt for details.
 
-include __DIR__.'/AbstractINIMultiDatabasePDOFactory.class.php';
-include __DIR__.'/DDL.class.php';
+if (!class_exists('AbstractINIMultiDatabasePDOFactory', false)) include __DIR__.'/AbstractINIMultiDatabasePDOFactory.class.php';
+if (!class_exists('DDL', false)) include __DIR__.'/DDL.class.php';
 
 function usage() {
 	global $argv;
@@ -97,10 +97,6 @@ if (empty($cp)) {
 $connectionParams = MyPDOFactory::getPDOParams($connectionName);
 $dbmap = (isset($connectionParams['tableToDatabaseMap']) && ($connectionParams['tableToDatabaseMap'] != '')) ?
 	new DDLTableToDatabaseMap($connectionParams['tableToDatabaseMap']) : null;
-if (!isset($connectionParams['connectionClass'])) {
-	fprintf(STDERR, "Missing connectionClass parameter for %s connection.\n", $connectionName);
-	exit(31);
-}
 
 // Get list of table names for this connection which are mapped from other connections;
 // merge with allowed table names to get final table name list.
@@ -121,7 +117,7 @@ $db = MyPDOFactory::getPDO($connectionName);
 $dialect = $db->dialect;
 $loader = new PDODDLLoader();
 $databaseDDL = $loader->loadDDL($db, false, $databaseAllowedTableNames);
-$db->close();
+$db = null;
 
 // Load the current DDL from the DDL files.
 $currentDDL = new DDL(array());
