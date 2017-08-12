@@ -266,7 +266,8 @@ class DDLTableColumn {
 		$defaultValue = null,
 		$sysVarDefault = null,
 		$autoIncrement = false,
-		$useTimeZone = false) {
+		$useTimeZone = false,
+		$enumValues = null) {
 
 		$this->name = $name;
 		$this->type = $type;
@@ -277,6 +278,7 @@ class DDLTableColumn {
 		$this->sysVarDefault = $sysVarDefault;
 		$this->autoIncrement = $autoIncrement;
 		$this->useTimeZone = $useTimeZone;
+		$this->enumValues = $enumValues;
 	}
 
 	public function isEqualForView($otherColumn) {
@@ -284,11 +286,13 @@ class DDLTableColumn {
 		$save_sysVarDefault = $this->sysVarDefault;
 		$save_autoIncrement = $this->autoIncrement;
 		$save_useTimeZone = $this->useTimeZone;
+		$save_enumValues = $this->enumValues;
 
 		$this->defaultValue = $otherColumn->defaultValue;
 		$this->sysVarDefault = $otherColumn->sysVarDefault;
 		$this->autoIncrement = $otherColumn->autoIncrement;
 		$this->useTimeZone = $otherColumn->useTimeZone;
+		$this->enumValues = $otherColumn->enumValues;
 
 		$result = ($this == $otherColumn);
 
@@ -296,6 +300,7 @@ class DDLTableColumn {
 		$this->sysVarDefault = $save_sysVarDefault;
 		$this->autoIncrement = $save_autoIncrement;
 		$this->useTimeZone = $save_useTimeZone;
+		$this->enumValues = $save_enumValues;
 
 		return $result;
 	}
@@ -555,6 +560,7 @@ EOF
 					$sysVarDefault = null;
 					$autoIncrement = false;
 					$useTimeZone = false;
+					$enumValues = null;
 
 					$tp = strtolower($tc->Type);
 					if (strncmp($tp, 'int', 3) == 0) {
@@ -604,6 +610,9 @@ EOF
 					} else if ($tp == 'timestamp') {
 						$type = 'datetime';
 						$useTimeZone = true;
+					} else if (strncmp($tp, 'enum(', 5) == 0) {
+						$type = 'enum';
+						$enumValues = $this->__mysql_parseEnumValues($tc->Type);
 					} else {
 						// Default all unrecognized types to text.
 						$type = 'text';
@@ -621,6 +630,11 @@ EOF
 								break;
 							case 'decimal':
 								$defaultValue = 0.0;
+								break;
+							case 'enum':
+								if (!empty($enumValues)) {
+									$defaultValue = $enumValues[0];
+								}
 								break;
 							default:
 								$defaultValue = '';
@@ -651,7 +665,8 @@ EOF
 						$defaultValue,
 						$sysVarDefault,
 						$autoIncrement,
-						$useTimeZone
+						$useTimeZone,
+						$enumValues
 					);
 				}	// while (($tc = $db->fetchObject($rs)) !== false)
 				$rs->closeCursor();
@@ -739,6 +754,7 @@ EOF
 					$sysVarDefault = null;
 					$autoIncrement = false;
 					$useTimeZone = false;
+					$enumValues = false;
 
 					$tp = strtolower($tc->data_type);
 					if (($tp == 'char') || ($tp == 'character')) {
@@ -836,7 +852,8 @@ EOF
 						$defaultValue,
 						$sysVarDefault,
 						$autoIncrement,
-						$useTimeZone
+						$useTimeZone,
+						$enumValues
 					);
 				}	// while (($tc = $db->fetchObject($rs)) !== false)
 				$rs->closeCursor();
@@ -1083,6 +1100,38 @@ EOF
 		if (isset($pieces[1])) return (int)trim($pieces[1]);
 		return 0;
 	} // __mysql_parseScale()
+
+	protected function __mysql_parseEnumValues($type) {
+		if (strncasecmp($type, 'enum(', 5) != 0) return array();
+		$len = strlen($type)-5;
+		if ($type[$len-1] == ')') $len--;
+		$type = substr($type, 5, $len);
+		$val = '';
+		$haveVal = $quoted = false;
+		$enumValues = array();
+		for ($i = 0, $prevc = ''; $i < $len; $i++, $prevc = $c) {
+			$c = $type[$i];
+			if ($c == "'") {
+				$quoted = !$quoted;
+				if ($quoted) {
+					$haveVal = true;
+					if ($prevc == "'") $val .= "'";
+				}
+				continue;
+			}
+			if ($quoted) {
+				$val .= $c;
+			} else {
+				if ($haveVal && (($c == ',') || (($i+1) >= $len))) {
+					$enumValues[] = $val;
+					$val = '';
+					$haveVal = false;
+				}
+			}
+		}
+		if ($haveVal) $enumValues[] = $val;
+		return $enumValues;
+	} // __mysql_parseEnumValues()
 } // PDODDLLoader
 
 
@@ -1118,7 +1167,7 @@ class YAMLDDLParser {
 				if (isset($tblAttrs['columns']) && is_array($tblAttrs['columns'])) {
 					$colSection = "tables => $tableName => columns";
 					foreach ($tblAttrs['columns'] as $columnName=>$colAttrs) {
-						$this->__allowOnlyAttrs($colSection, $colAttrs, array('type', 'size', 'scale', 'null', 'default', 'defaultIsBase64Encoded', 'sysVarDefault', 'autoIncrement', 'useTimeZone'));
+						$this->__allowOnlyAttrs($colSection, $colAttrs, array('type', 'size', 'scale', 'null', 'default', 'defaultIsBase64Encoded', 'sysVarDefault', 'autoIncrement', 'useTimeZone', 'enumValues'));
 						$this->__requireAttrs($colSection, $colAttrs, array('type'));
 						switch ($colAttrs['type']) {
 						case 'integer':
@@ -1150,6 +1199,10 @@ class YAMLDDLParser {
 						case 'datetime':
 							$this->__allowOnlyAttrs($colSection, $colAttrs, array('type', 'null', 'default', 'defaultIsBase64Encoded', 'sysVarDefault', 'useTimeZone'));
 							break;
+						case 'enum':
+							$this->__allowOnlyAttrs($colSection, $colAttrs, array('type', 'null', 'default', 'defaultIsBase64Encoded', 'enumValues'));
+							$this->__requireAttrs($colSection, $colAttrs, array('enumValues'));
+							break;
 						default:
 							throw new Exception(sprintf("Invalid column type: %s", $colAttrs['type']));
 							break;
@@ -1169,24 +1222,34 @@ class YAMLDDLParser {
 							}
 							if ($autoIncColName != '') {
 								throw new Exception(sprintf(
-									"Cannot have more than one autoIncrement column per table".
-										" in table name \"%s\"",
+									"Cannot have more than one autoIncrement column per table in table name \"%s\"",
 									$tableName
 								));
 							}
 							$autoIncColName = $columnName;
 						} else if (isset($colAttrs['sysVarDefault'])) {
 							if (isset($colAttrs['default'])) {
-								throw new Exception(
-									"Cannot have both sysVarDefault and default".
-										" attributes on a column."
-								);
+								throw new Exception(sprintf(
+									"Cannot have both sysVarDefault and default attributes on a column in table name \"%s\".",
+									$tableName
+								));
 							}
 						}
 
 						$type = $colAttrs['type'];
 						$allowNull = (isset($colAttrs['null']) && (!$colAttrs['null'])) ? false : true;
 						$defaultValue = isset($colAttrs['default']) ? $colAttrs['default'] : null;
+						if ($type == 'enum') {
+							if ((!isset($colAttrs['enumValues'])) || (!is_array($colAttrs['enumValues']))) {
+								throw new Exception(sprintf(
+									"enum type columns require an enumValues list in table name \"%s\".",
+									$tableName
+								));
+							}
+							$enumValues = array_values($colAttrs['enumValues']);
+						} else {
+							$enumValues = null;
+						}
 						if ($defaultValue !== null) {
 							// Base64-decode the default value if needed.
 							if (isset($colAttrs['defaultIsBase64Encoded']) &&
@@ -1213,11 +1276,25 @@ class YAMLDDLParser {
 								case 'decimal':
 									$defaultValue = 0.0;
 									break;
+								case 'enum':
+									if (!empty($enumValues)) {
+										$defaultValue = $enumValues[0];
+									}
+									break;
 								default:
 									$defaultValue = '';
 									break;
 								}
 							}
+						}
+
+						if (($type == 'enum') &&
+							(!in_array($defaultValue, $enumValues)) &&
+							(($defaultValue !== null) || (!$allowNull))) {
+							throw new Exception(sprintf(
+								"defaultValue does not exist in enumValues list, and defaultValue is either not NULL or the column does not allow NULL in table name \"%s\".",
+								$tableName
+							));
 						}
 
 						// Only save tables which contain one or more columns.
@@ -1237,10 +1314,9 @@ class YAMLDDLParser {
 							$allowNull,
 							$defaultValue,
 							isset($colAttrs['sysVarDefault']) ? $colAttrs['sysVarDefault'] : null,
-							(isset($colAttrs['autoIncrement']) && ($colAttrs['autoIncrement'])) ?
-								true : false,
-							(isset($colAttrs['useTimeZone']) && ($colAttrs['useTimeZone'])) ?
-								true : false
+							(isset($colAttrs['autoIncrement']) && ($colAttrs['autoIncrement'])) ? true : false,
+							(isset($colAttrs['useTimeZone']) && ($colAttrs['useTimeZone'])) ? true : false,
+							$enumValues
 						);
 					}	// foreach ($tblAttrs['columns'] as $columnName=>$colAttrs)
 				}	// if (isset($tblAttrs['columns']) && is_array($tblAttrs['columns']))
@@ -1289,7 +1365,6 @@ class YAMLDDLParser {
 						$fkSection = "tables => $tableName => foreignKeys => $fkName";
 						$this->__allowOnlyAttrs($fkSection, $fkAttrs, array('foreignTable', 'columns'));
 						$this->__requireAttrs($fkSection, $fkAttrs, array('foreignTable'));
-/// TODO: Verify that the foreign key name hasn't been already created.
 
 						$referencedTableName = $fkAttrs['foreignTable'];
 
@@ -1858,6 +1933,31 @@ class SQLDDLSerializer {
 					break;
 				}
 				break;
+			case 'enum':
+				switch ($dialect) {
+				case 'mysql':
+					$sql .= 'enum(';
+					$evsep = '';
+					foreach ($col->enumValues as $ev) {
+						$sql .= $evsep."'".$this->__escape($ev, $dialect)."'";
+						if ($evsep == '') $evsep = ', ';
+					}
+					unset($evsep);
+					$sql .= ')';
+					break;
+				case 'pgsql':
+					// PostgreSQL doesn't have a directly-usable enum type for table columns.
+					// Instead, it stupidly requires you to do the following gymnastics:
+					//     create type x_enum_type_x as enum('a', 'b', 'c');
+					//     create table x (x x_enum_type_x not null default 'b');
+					// So for enum types in PostgreSQL, we just use a varchar column with a
+					// length equal to the maximum length of any of the enumerated values.
+					$maxevlen = 1;
+					foreach ($col->enumValues as $ev) $maxevlen = max($maxevlen, strlen($ev));
+					$sql .= sprintf('varchar(%d)', $maxevlen);
+					break;
+				}
+				break;
 			default:
 				throw new Exception("Invalid column type: %s", $col->type);
 				break;
@@ -1947,6 +2047,12 @@ class SQLDDLSerializer {
 							$this->__escape($col->defaultValue, $dialect)
 						);
 					}
+					break;
+				case 'enum':
+					$sql .= sprintf(
+						" default '%s'",
+						$this->__escape($col->defaultValue, $dialect)
+					);
 					break;
 				default:
 					$vlen = strlen($col->defaultValue);
@@ -2439,6 +2545,18 @@ class YAMLDDLSerializer {
 					if ($col->type == 'decimal') {
 						$yaml .= sprintf(', scale: %d', $col->scale);
 					}
+					if ($col->type == 'enum') {
+						$yaml .= ', enumValues: [ ';
+						if (is_array($col->enumValues)) {
+							$evsep = '';
+							foreach ($col->enumValues as $ev) {
+								$yaml .= $evsep.self::yamlQuoteInlineString($ev);
+								if ($evsep == '') $evsep = ', ';
+							}
+							unset($evsep);
+						}
+						$yaml .= ' ]';
+					}
 					if (!$col->allowNull) {
 						$yaml .= ', null: No';
 					}
@@ -2459,10 +2577,9 @@ class YAMLDDLSerializer {
 								base64_encode($col->defaultValue)
 							);
 						} else {
-/// TODO: Figure out how to quote and properly escape this to avoid breaking the YAML format.
 							$yaml .= sprintf(
-								', default: "%s"',
-								$col->defaultValue
+								', default: %s',
+								self::yamlQuoteInlineString($col->defaultValue)
 							);
 						}
 					} else {
@@ -2597,8 +2714,7 @@ class YAMLDDLSerializer {
 								base64_encode($col->value)
 							);
 						} else {
-/// TODO: Figure out how to quote and properly escape this to avoid breaking the YAML format.
-							$yaml .= sprintf(' value: "%s"', $col->value);
+							$yaml .= sprintf(' value: %s', self::yamlQuoteInlineString($col->value));
 						}
 						if ($col->quoted) $yaml .= ', quoted: Yes';
 					}
@@ -2610,7 +2726,66 @@ class YAMLDDLSerializer {
 		}
 		unset($tle);	// release reference to last element
 		return $yaml;
-	}
+	} // serialize()
+
+	public static function yamlQuoteInlineString($s) {
+		$result = '"';
+		$len = strlen($s);
+		for ($i = 0; $i < $len; $i++) {
+			$c = $s[$i];
+			switch ($c) {
+			case "\x00":
+			case "\x01":
+			case "\x02":
+			case "\x03":
+			case "\x04":
+			case "\x05":
+			case "\x06":
+			case "\x07":
+			case "\x08":
+			case "\x0b":
+			case "\x0c":
+			case "\x0e":
+			case "\x0f":
+			case "\x10":
+			case "\x11":
+			case "\x12":
+			case "\x13":
+			case "\x14":
+			case "\x15":
+			case "\x16":
+			case "\x17":
+			case "\x18":
+			case "\x19":
+			case "\x1a":
+			case "\x1b":
+			case "\x1c":
+			case "\x1d":
+			case "\x1e":
+			case "\x1f":
+				$result .= sprintf("\\#x%02x", ord($c));
+				break;
+			case "\x09":
+				$result .= "\\t";
+				break;
+			case "\x0a":
+				$result .= "\\n";
+				break;
+			case "\x0d":
+				$result .= "\\r";
+				break;
+			default:
+				if (ord($c) >= 0x7f) {
+					$result .= sprintf("\\#x%02x", ord($c));
+				} else {
+					$result .= $c;
+				}
+				break;
+			}
+		}
+		$result .= '"';
+		return $result;
+	} // yamlQuote()
 } // YAMLDDLSerializer
 
 
