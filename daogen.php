@@ -176,7 +176,7 @@ if ($haveDB) {
 
 	switch ($dialect) {
 	case 'mysql':
-		if ($port < 0) $port = 3306;
+		if ($dbPort < 0) $dbPort = 3306;
 		$db = new PDO(sprintf('mysql:host=%s;port=%d;dbname=%s', rawurlencode($dbHost), $dbPort, rawurlencode($dbDatabase)), $dbUsername, $dbPassword);
 		$db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 		$db->setAttribute(PDO::ATTR_EMULATE_PREPARES, false);
@@ -184,7 +184,7 @@ if ($haveDB) {
 		$db->setAttribute(PDO::MYSQL_ATTR_USE_BUFFERED_QUERY, false);
 		break;
 	case 'pgsql':
-		if ($port < 0) $port = 5432;
+		if ($dbPort < 0) $dbPort = 5432;
 		$db = new PDO(sprintf('pgsql:host=%s;port=%d;dbname=%s;user=%s;password=%s', rawurlencode($dbHost), $dbPort, rawurlencode($dbDatabase), rawurlencode($dbUsername), rawurlencode($dbPassword)));
 		$db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 		$db->setAttribute(PDO::ATTR_EMULATE_PREPARES, false);
