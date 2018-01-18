@@ -14,7 +14,7 @@
             "email": "ron@roncemer.com"
         }
     ],
-    "license": "BSD",
+    "license": "BSD-2-Clause",
     "require": {
         "mustangostang/spyc": "^0.6.2"
     },
